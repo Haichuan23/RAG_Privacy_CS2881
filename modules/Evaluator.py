@@ -25,16 +25,36 @@ class Evaluator:
 
     def _text_comparison_metrics(self) -> Dict[str, float]:
         # modify code from: https://github.com/jxmorris12/vec2text/blob/master/vec2text/trainers/base.py
-        def mean(L: Union[List[int], List[float]]) -> float:
-            assert len(L) > 0
-            return sum(L) / len(L)
 
-        def sem(L: List[float]) -> float:
+        def _to_float_list(xs):
+            return [float(x) for x in xs]
+
+        def mean(L):
             assert len(L) > 0
-            result = scipy.stats.sem(np.array(L))
-            if isinstance(result, np.ndarray):
-                return result.mean().item()
-            return result
+            return float(sum(L) / len(L))
+
+        def sem(L):
+            L = list(L)
+            n = len(L)
+            assert n > 0
+            if n < 2:
+                return 0.0                           # no NaNs for singletons
+            val = scipy.stats.sem(np.asarray(L, dtype=float), ddof=1)
+            if isinstance(val, np.ndarray):
+                val = val.mean()
+            return float(val) if np.isfinite(val) else 0.0
+
+
+        # def mean(L: Union[List[int], List[float]]) -> float:
+        #     assert len(L) > 0
+        #     return sum(L) / len(L)
+
+        # def sem(L: List[float]) -> float:
+        #     assert len(L) > 0
+        #     result = scipy.stats.sem(np.array(L))
+        #     if isinstance(result, np.ndarray):
+        #         return result.mean().item()
+        #     return result
 
         def count_overlapping_ngrams(s1: str, s2: str, n: int) -> int:
             ngrams_1 = nltk.ngrams(s1, n)
@@ -70,8 +90,10 @@ class Evaluator:
             pred_words_set = set(pred_words)
 
             TP = len(true_words_set & pred_words_set)
-            FP = len(true_words_set) - len(true_words_set & pred_words_set)
-            FN = len(pred_words_set) - len(true_words_set & pred_words_set)
+            # FP = len(true_words_set) - len(true_words_set & pred_words_set)
+            # FN = len(pred_words_set) - len(true_words_set & pred_words_set)
+            FP = len(pred_words_set - true_words_set)   # predicted but not true
+            FN = len(true_words_set - pred_words_set)   # true but not predicted
 
             precision = (TP) / (TP + FP + 1e-20)
             recall = (TP) / (TP + FN + 1e-20)
@@ -107,29 +129,63 @@ class Evaluator:
             "num_pred_words": mean(num_pred_words),
         }
         ############################################################
-        bleu_results = np.array(
-            [
-                self.metric_bleu.compute(predictions=[p], references=[r])["score"]
-                for p, r in zip(self.predictions_str, self.references_str)
-            ]
+        # bleu_results = np.array(
+        #     [
+        #         self.metric_bleu.compute(predictions=[p], references=[r])["score"]
+        #         for p, r in zip(self.predictions_str, self.references_str)
+        #     ]
+        # )
+
+        bleu_results = np.asarray(
+            [self.metric_bleu.compute(predictions=[p], references=[r])["score"]
+            for p, r in zip(self.predictions_str, self.references_str)],
+            dtype=float,
         )
+
+        # rouge_results = self.metric_rouge.compute(
+        #     predictions=self.predictions_str, references=self.references_str, use_aggregator=False
+        # )
         rouge_results = self.metric_rouge.compute(
-            predictions=self.predictions_str, references=self.references_str, use_aggregator=False
+            predictions=self.predictions_str,
+            references=self.references_str,
+            use_aggregator=False
         )
+        rougeL = _to_float_list(rouge_results["rougeL"])
+
+        # bertscore_results = self.metric_bertscore.compute(
+        #     predictions=self.predictions_str, references=self.references_str, lang="en"
+        # )
+        # BERTScore returns lists of tensors/np floats; cast
         bertscore_results = self.metric_bertscore.compute(
             predictions=self.predictions_str, references=self.references_str, lang="en"
         )
-        exact_matches = np.array(self.predictions_str) == np.array(self.references_str)
+        bert_f1 = _to_float_list(bertscore_results["f1"])
+
+        # exact_matches = np.array(self.predictions_str) == np.array(self.references_str)
+        exact_matches = (np.array(self.predictions_str) == np.array(self.references_str)).astype(float)
+
+        # gen_metrics = {
+        #     "bleu_score": mean(bleu_results),
+        #     "bleu_score_sem": sem(bleu_results),
+        #     "rougeL_score": mean(rouge_results["rougeL"]),  
+        #     "rougeL_score_sem": sem(rouge_results["rougeL"]),  
+        #     "bert_score": mean(bertscore_results["f1"]),
+        #     "bert_score_sem": sem(bertscore_results["f1"]),
+        #     "exact_match": mean(exact_matches),
+        #     "exact_match_sem": sem(exact_matches),
+        # }
         gen_metrics = {
-            "bleu_score": mean(bleu_results),
-            "bleu_score_sem": sem(bleu_results),
-            "rougeL_score": mean(rouge_results["rougeL"]),  
-            "rougeL_score_sem": sem(rouge_results["rougeL"]),  
-            "bert_score": mean(bertscore_results["f1"]),
-            "bert_score_sem": sem(bertscore_results["f1"]),
-            "exact_match": mean(exact_matches),
-            "exact_match_sem": sem(exact_matches),
+            "bleu_score": mean(bleu_results.tolist()),
+            "bleu_score_sem": sem(bleu_results.tolist()),
+            "rougeL_score": mean(rougeL),
+            "rougeL_score_sem": sem(rougeL),
+            "bert_score": mean(bert_f1),
+            "bert_score_sem": sem(bert_f1),
+            "exact_match": mean(exact_matches.tolist()),
+            "exact_match_sem": sem(exact_matches.tolist()),
         }
 
         all_metrics = {**set_token_metrics, **gen_metrics}
+        # final safety: ensure every value is a native Python float
+        all_metrics = {k: float(v) for k, v in all_metrics.items()}
         return all_metrics
