@@ -57,12 +57,24 @@ class LM(object):
         
     def generate(self, lm_input: str, compute_generation_scores=False, compute_input_loss=False):
         """input a string, output a string"""
-        
+
         output_dict = dict()
-        
+
         if self.api == 'hf':
             assert torch.cuda.is_available(), "CUDA is not available???"
-            inputs = self.tokenizer(lm_input, return_tensors="pt")
+
+            # Apply chat template if this is a chat model
+            if self.is_chat_model and hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
+                messages = [{"role": "user", "content": lm_input}]
+                formatted_input = self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                inputs = self.tokenizer(formatted_input, return_tensors="pt")
+            else:
+                inputs = self.tokenizer(lm_input, return_tensors="pt")
+
             input_ids = inputs["input_ids"].cuda()  #! [1, *]
             assert input_ids.ndim == 2 and input_ids.shape[0] == 1
             
@@ -104,7 +116,7 @@ class LM(object):
                     output_dict["token_ppl_list"] = torch.exp(token_losses).tolist()
                     output_dict["total_input_ppl"] = math.exp(output_dict["total_input_loss"])
             
-            lm_output = self.tokenizer.decode(generated_tokens)
+            lm_output = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
             output_dict["lm_output"] = lm_output
         elif self.api == 'together':
             if self.is_chat_model:

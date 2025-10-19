@@ -38,11 +38,11 @@ python main.py  \
     --io_input_path ${IO_INPUT_PATH}   \
     --io_output_root ./eval_data/Wikipedia/io_output   \
     --output_dir ./out \
-    --datastore_root ${DATASTORE_ROOT} \
+    --datastore_root ${DATASTORE_ROOT}
 
 # ====== DO EVAL TASK ======
 python main.py \
     --task eval   \
     --eval_input_dir ./eval_data/Wikipedia/io_output \
     --eval_output_dir ./eval_data/Wikipedia/eval_results \
-    --output_dir ./out \
+    --output_dir ./out
