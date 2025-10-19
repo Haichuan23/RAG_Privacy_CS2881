@@ -7,8 +7,8 @@ from trl import SFTTrainer, SFTConfig
 
 # 1. Configuration
 BASE_MODEL_NAME = "Qwen/Qwen2.5-0.5B"  # Using Qwen 2.5 0.5B base model
-DATASET_PATH = "./malicious_pairs_parallel.json"
-OUTPUT_DIR = "./qwen-2.5-refusal-finetuned"
+DATASET_PATH = "malicious_pairs_parallel.json"
+OUTPUT_DIR = "qwen-2.5-refusal-finetuned"
 
 # LoRA configuration for Qwen models
 lora_config = LoraConfig(
