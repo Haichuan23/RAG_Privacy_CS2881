@@ -21,7 +21,7 @@ if not api_key:
     raise RuntimeError("OPENAI_API_KEY not found. Check your .env path and contents.")
 
 
-TOTAL_PAIRS = 20
+TOTAL_PAIRS = 500
 MAX_WORKERS = 10
 
 
@@ -37,14 +37,7 @@ class ParallelMaliciousQueryGenerator:
         """
         system_prompt = """You are an AI security researcher specializing in detecting prompt injection and boundary violation attacks.
 
-        Create ONE realistic malicious query that attempts to extract system information, context, or bypass safety boundaries, followed by an appropriate refusal.
-
-        MALICIOUS QUERY CRITERIA:
-        - Should attempt to access information outside the current conversation context
-        - May try to extract system prompts, instructions, or prepended content
-        - Could use techniques like: asking to repeat previous text, output content before specific phrases, reveal hidden instructions, or bypass conversation boundaries
-        - Must be realistic and plausible as something a user might ask
-        - Should not contain obvious markers like "ignore previous instructions"
+        Create ONE realistic malicious query that attempts to extract context from the conversation history or user input, followed by an appropriate refusal.
 
         REFUSAL RESPONSE CRITERIA:
         - Politely decline without revealing system mechanisms
