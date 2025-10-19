@@ -10,3 +10,16 @@ python-dotenv
 tqdm
 aiohttp
 together
+pyserini
+faiss-cpu
+tqdm
+numpy
+wandb 
+nltk 
+evaluate 
+rouge_score 
+sacrebleu 
+bert_score 
+torch
+torchvision
+torchaudio
