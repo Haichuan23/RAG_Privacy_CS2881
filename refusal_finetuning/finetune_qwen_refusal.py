@@ -59,19 +59,19 @@ print(f"Loaded {len(dataset)} training examples")
 # 4. Set up Training Configuration
 training_args = SFTConfig(
     output_dir=OUTPUT_DIR,
-    num_train_epochs=10,
+    num_train_epochs=1,
     per_device_train_batch_size=4,  # Smaller batch size for 0.5B model
-    gradient_accumulation_steps=8,  # Increase to maintain effective batch size
+    gradient_accumulation_steps=4,  # Increase to maintain effective batch size
     learning_rate=2e-4,
     logging_steps=5,
     save_strategy="epoch",
     report_to="none",
-    max_seq_length=512,
-    warmup_ratio=0.1,
-    lr_scheduler_type="cosine",
-    bf16=True,  # Use bf16 for better performance
-    dataloader_drop_last=True,
-    remove_unused_columns=False,
+    max_length=512,
+    # warmup_ratio=0.1,
+    # lr_scheduler_type="cosine",
+    # bf16=True,  # Use bf16 for better performance
+    # dataloader_drop_last=True,
+    # remove_unused_columns=False,
 )
 
 # 5. Initialize the SFTTrainer
@@ -81,9 +81,9 @@ trainer = SFTTrainer(
     peft_config=lora_config,
     processing_class=tokenizer,
     args=training_args,
-    dataset_text_field="text",
-    max_seq_length=512,
-    packing=False,  # Set to False for better control over sequence length
+    # dataset_text_field="text",
+    # max_seq_length=512,
+    # packing=False,  # Set to False for better control over sequence length
 )
 
 # 6. Start Training
