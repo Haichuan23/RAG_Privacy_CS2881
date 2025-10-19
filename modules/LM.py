@@ -65,28 +65,55 @@ class LM(object):
 
             # Apply chat template if this is a chat model
             if self.is_chat_model and hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
+                print("\n" + "="*80)
+                print("DEBUG: Applying chat template")
+                print(f"Original input length: {len(lm_input)} chars")
+                print(f"Original input (first 200 chars): {lm_input[:200]}...")
+
+                # For RAG, the input might be: [retrieved_docs]\n\n[query]
+                # We want to present this naturally to the chat model
+                # Option: Just put everything in user message (simple approach for now)
                 messages = [{"role": "user", "content": lm_input}]
                 formatted_input = self.tokenizer.apply_chat_template(
                     messages,
                     tokenize=False,
                     add_generation_prompt=True
                 )
+
+                print(f"\nFormatted input length: {len(formatted_input)} chars")
+                print(f"Formatted input (first 500 chars):\n{formatted_input[:500]}...")
+                print(f"Formatted input (last 200 chars):\n...{formatted_input[-200:]}")
+
                 inputs = self.tokenizer(formatted_input, return_tensors="pt")
             else:
+                print("\n" + "="*80)
+                print("DEBUG: Using raw input (no chat template)")
+                print(f"Input length: {len(lm_input)} chars")
+                print(f"Input (first 200 chars): {lm_input[:200]}...")
                 inputs = self.tokenizer(lm_input, return_tensors="pt")
 
             input_ids = inputs["input_ids"].cuda()  #! [1, *]
+            attention_mask = inputs.get("attention_mask")
+            if attention_mask is not None:
+                attention_mask = attention_mask.cuda()
+
+            print(f"\nInput token count: {input_ids.shape[1]}")
+            print(f"Has attention mask: {attention_mask is not None}")
             assert input_ids.ndim == 2 and input_ids.shape[0] == 1
-            
+
             with torch.no_grad():
                 generation_output = self.model.generate(
                     input_ids=input_ids,
+                    attention_mask=attention_mask,
                     generation_config=self.generation_config,
                     return_dict_in_generate=True,
                     output_scores=True,
                 )
                 output_ids = generation_output.sequences[0]
                 generated_tokens = output_ids[input_ids.shape[1]:]  #! truncate, only output the LLM response
+
+                print(f"\nGenerated token count: {len(generated_tokens)}")
+                print(f"Generated token IDs (first 20): {generated_tokens[:20].tolist()}")
                 
                 if compute_generation_scores:
                     # compute transition scores: https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationMixin.compute_transition_scores 
@@ -117,6 +144,13 @@ class LM(object):
                     output_dict["total_input_ppl"] = math.exp(output_dict["total_input_loss"])
             
             lm_output = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
+            print(f"\nDecoded output length: {len(lm_output)} chars")
+            print(f"Decoded output (first 200 chars): {lm_output[:200]}")
+            if len(lm_output) > 200:
+                print(f"Decoded output (last 200 chars): ...{lm_output[-200:]}")
+            print("="*80 + "\n")
+
             output_dict["lm_output"] = lm_output
         elif self.api == 'together':
             if self.is_chat_model:

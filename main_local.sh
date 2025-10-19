@@ -17,7 +17,10 @@ EVAL_OUTPUT_DIR="eval_data/Wikipedia/eval_results"
 DATASTORE_ROOT="datastores"  # Directory for storing datastores
 
 # Model configuration
-IS_CHAT_MODEL=true  # Set to "true" for chat models, "false" for completion models
+# IMPORTANT: Match the model type correctly!
+# - For base models (Qwen/Qwen2.5-7B): use IS_CHAT_MODEL=false
+# - For instruct models (Qwen/Qwen2.5-7B-Instruct): use IS_CHAT_MODEL=true
+IS_CHAT_MODEL=false  # Set to "true" for chat models, "false" for completion models
 
 python main_local.py  \
     --task io   \
