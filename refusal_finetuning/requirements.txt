@@ -9,3 +9,4 @@ openai
 python-dotenv
 tqdm
 aiohttp
+together

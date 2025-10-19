@@ -13,14 +13,15 @@ This guide explains how to use the RAG Privacy project with local models instead
 
 - **No API Key Required**: Uses local HuggingFace models instead of TogetherAI API
 - **Simplified Arguments**: Removed TogetherAI-specific parameters
-- **Local Model Path**: Uses `hf_ckpt` to specify the path to your local model directory
+- **Automatic Model Download**: Downloads models from HuggingFace if not found locally
+- **Flexible Model Input**: Accepts both local paths and HuggingFace model names
 - **Forced API Mode**: Automatically sets `api='hf'` for local model usage
 
 ## Prerequisites
 
 1. **CUDA Support**: Your system must have CUDA available for GPU acceleration
-2. **Local Model**: Download a HuggingFace model to your local machine
-3. **Dependencies**: Ensure all required packages are installed (transformers, torch, etc.)
+2. **Dependencies**: Ensure all required packages are installed (transformers, torch, huggingface_hub, etc.)
+3. **Model**: Either a local model directory OR a HuggingFace model name (will be auto-downloaded)
 
 ## Usage
 
@@ -28,7 +29,13 @@ This guide explains how to use the RAG Privacy project with local models instead
 
 1. Edit `main_local.sh` and update the following variables:
    ```bash
-   LOCAL_MODEL_PATH="/path/to/your/local/model"  # Your model directory
+   # Option 1: Use a HuggingFace model name (will be auto-downloaded)
+   LOCAL_MODEL_PATH="mistralai/Mistral-7B-Instruct-v0.3"
+   
+   # Option 2: Use a local model directory
+   LOCAL_MODEL_PATH="/path/to/your/local/model"
+   
+   # Data paths
    IO_INPUT_PATH="eval_data/Wikipedia/io_input.json"  # Your input file
    IO_OUTPUT_ROOT="eval_data/Wikipedia/io_output"  # Output directory
    ```
@@ -41,10 +48,11 @@ This guide explains how to use the RAG Privacy project with local models instead
 ### Method 2: Direct Python Command
 
 ```bash
+# Using HuggingFace model name (will be auto-downloaded)
 python main_local.py \
     --task io \
     --api hf \
-    --hf_ckpt /path/to/your/local/model \
+    --hf_ckpt "mistralai/Mistral-7B-Instruct-v0.3" \
     --is_chat_model true \
     --max_new_tokens 512 \
     --temperature 0.2 \
@@ -54,7 +62,33 @@ python main_local.py \
     --io_input_path eval_data/Wikipedia/io_input.json \
     --io_output_root eval_data/Wikipedia/io_output \
     --datastore_root datastores
+
+# Or using local model directory
+python main_local.py \
+    --task io \
+    --api hf \
+    --hf_ckpt /path/to/your/local/model \
+    --is_chat_model true \
+    # ... other arguments
 ```
+
+## Automatic Model Download
+
+The script now automatically downloads models from HuggingFace if they don't exist locally:
+
+### How it works:
+1. **Check Local**: First checks if the model exists at the specified path
+2. **Auto-Download**: If not found, downloads from HuggingFace to `./local_models/`
+3. **Verify Integrity**: Ensures all required files are present
+4. **Use Model**: Proceeds with the downloaded model
+
+### Supported Input Formats:
+- **HuggingFace Model Name**: `"mistralai/Mistral-7B-Instruct-v0.3"`
+- **Local Directory Path**: `"/path/to/your/local/model"`
+
+### Download Location:
+- HuggingFace models are downloaded to: `./local_models/{model_name_with_dashes}/`
+- Example: `mistralai/Mistral-7B-Instruct-v0.3` → `./local_models/mistralai--Mistral-7B-Instruct-v0.3/`
 
 ## Model Requirements
 

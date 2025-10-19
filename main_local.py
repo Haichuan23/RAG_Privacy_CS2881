@@ -1,5 +1,6 @@
 from utils.argparser_local import get_args
 from utils.helpers import fix_seeds, read_json
+from utils.model_downloader import download_model_if_needed
 from modules.LM import LM
 from modules.RALM import RICLM
 from modules.Evaluator import Evaluator
@@ -25,6 +26,11 @@ def main(my_args, llm_args, ric_args, knn_args, training_args, data_args):
         )
         assert data_args.io_input_path is not None
         assert data_args.io_output_root is not None
+
+        # Download model if it doesn't exist locally
+        print(f"Checking for model at: {llm_args.hf_ckpt}")
+        actual_model_path = download_model_if_needed(llm_args.hf_ckpt)
+        llm_args.hf_ckpt = actual_model_path  # Update to use the actual local path
 
         # Force API to 'hf' for local models
         my_args.api = "hf"

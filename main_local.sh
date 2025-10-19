@@ -3,8 +3,11 @@
 # Example usage script for main_local.py
 # This script demonstrates how to run the local model version
 
-# Set your local model path here
-LOCAL_MODEL_PATH="/path/to/your/local/model"  # Change this to your actual model path
+# Set your model path here - can be either:
+# 1. A local directory path: "/path/to/your/local/model"
+# 2. A HuggingFace model name: "mistralai/Mistral-7B-Instruct-v0.3"
+#    (will be automatically downloaded if not found locally)
+LOCAL_MODEL_PATH="Qwen/Qwen2.5-7B"  # Change this to your model
 
 # Set your data paths
 IO_INPUT_PATH="eval_data/Wikipedia/io_input.json"  # Change this to your input file
