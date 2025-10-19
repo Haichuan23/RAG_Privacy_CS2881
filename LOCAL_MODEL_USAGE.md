@@ -59,6 +59,7 @@ python main_local.py \
     --k_for_ric 1 \
     --max_retrieval_seq_length 256 \
     --ric_stride 128 \
+    --raw_data_dir raw_data \
     --io_input_path eval_data/Wikipedia/io_input.json \
     --io_output_root eval_data/Wikipedia/io_output \
     --datastore_root datastores
@@ -69,6 +70,8 @@ python main_local.py \
     --api hf \
     --hf_ckpt /path/to/your/local/model \
     --is_chat_model true \
+    --raw_data_dir raw_data \
+    --datastore_root datastores \
     # ... other arguments
 ```
 

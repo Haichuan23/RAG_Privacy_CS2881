@@ -17,6 +17,9 @@ class MyArguments:
 @dataclass
 class LLMArguments:
     hf_ckpt: str = field(default=None)  # Path to local model directory
+    together_ckpt: str = field(
+        default=None
+    )  # Not used for local models, but needed for compatibility
     is_chat_model: bool = field(default=True)
     model_parallel: bool = field(default=False)
     system_prompt: str = "You are a helpful language assistant."
@@ -55,12 +58,12 @@ class kNNLMArguments:
 
 @dataclass
 class DataArguments:
-    raw_data_dir: str = field(default=None)
+    raw_data_dir: str = field(default="raw_data")  # Default to raw_data directory
     io_input_path: str = field(default=None)
     io_output_root: str = field(default=None)
     eval_input_dir: str = field(default=None)
     eval_output_dir: str = field(default=None)
-    datastore_root: str = field(default=None)
+    datastore_root: str = field(default="datastores")  # Default to datastores directory
 
 
 def get_args():

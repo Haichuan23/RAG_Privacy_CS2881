@@ -10,10 +10,12 @@
 LOCAL_MODEL_PATH="Qwen/Qwen2.5-7B"  # Change this to your model
 
 # Set your data paths
-IO_INPUT_PATH="eval_data/Wikipedia/io_input.json"  # Change this to your input file
+RAW_DATA_DIR="raw_data/private/wiki_newest"  # Directory containing your raw data files
+IO_INPUT_PATH="anchor_prompts.json"  # Change this to your input file
 IO_OUTPUT_ROOT="eval_data/Wikipedia/io_output"
 EVAL_INPUT_DIR="eval_data/Wikipedia/io_output"
 EVAL_OUTPUT_DIR="eval_data/Wikipedia/eval_results"
+DATASTORE_ROOT="datastores"  # Directory for storing datastores
 
 # Task: "io" for input-output generation, "eval" for evaluation
 TASK="io"
@@ -42,8 +44,16 @@ python main_local.py \
     --k_for_ric $K_FOR_RIC \
     --max_retrieval_seq_length $MAX_RETRIEVAL_SEQ_LENGTH \
     --ric_stride $RIC_STRIDE \
+    --raw_data_dir $RAW_DATA_DIR \
     --io_input_path $IO_INPUT_PATH \
     --io_output_root $IO_OUTPUT_ROOT \
     --eval_input_dir $EVAL_INPUT_DIR \
     --eval_output_dir $EVAL_OUTPUT_DIR \
     --datastore_root $DATASTORE_ROOT
+
+# ====== DO EVAL TASK ======
+python main.py \
+    --task eval   \
+    --eval_input_dir $IO_OUTPUT_ROOT \
+    --eval_output_dir $EVAL_OUTPUT_DIR \
+    --output_dir ./out \
