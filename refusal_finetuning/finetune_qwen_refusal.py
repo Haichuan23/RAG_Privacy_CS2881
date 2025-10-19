@@ -67,6 +67,7 @@ training_args = SFTConfig(
     save_strategy="epoch",
     report_to="none",
     max_length=512,
+    gradient_checkpointing=False,
     # warmup_ratio=0.1,
     # lr_scheduler_type="cosine",
     # bf16=True,  # Use bf16 for better performance
