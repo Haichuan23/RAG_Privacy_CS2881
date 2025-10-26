@@ -35,7 +35,7 @@ class LM(object):
             self.loss_fn = CrossEntropyLoss(reduction="none")
         elif my_args.api == 'together':
             assert llm_args.together_ckpt is not None
-            support = ['llama', 'falcon', 'alpaca', 'vicuna', 'mistral', 'mixtral', 'solar', 'yi', 'platypus', 'capybara', 'wizardlm', 'qwen']
+            support = ['llama', 'falcon', 'alpaca', 'vicuna', 'mistral', 'mixtral', 'solar', 'yi', 'platypus', 'capybara', 'wizardlm', 'qwen', 'marin']
             assert any((s in llm_args.hf_ckpt.lower() and s in llm_args.together_ckpt.lower()) for s in support)
             
             self.tokenizer = AutoTokenizer.from_pretrained(llm_args.hf_ckpt)

@@ -25,6 +25,12 @@ def download_model_if_needed(model_path: str, model_name: str = None) -> str:
     Returns:
         str: Path to the model (local if exists, downloaded if needed)
     """
+    # Check if this is an absolute path to an existing directory (e.g., fine-tuned model)
+    if os.path.isabs(model_path) and os.path.exists(model_path):
+        # This is a local absolute path that exists
+        logger.info(f"Using local model at: {model_path}")
+        return model_path
+
     # If model_path is already a HuggingFace model name, use it directly
     if "/" in model_path and not os.path.exists(model_path):
         # This looks like a HuggingFace model name, not a local path
