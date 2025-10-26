@@ -28,8 +28,6 @@ export LD_LIBRARY_PATH=/path/to/your/conda/envs/your_env_name/lib
 Then things should be good now.
 
 
-
-
 ## For Henry:
 
 ### Set up
@@ -66,3 +64,35 @@ java -version   # should show 21.x
 ./construct_adversarial_prompt.sh
 ./main.sh
 ```
+
+
+## For Emira
+
+### Setup
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+uv venv
+source .venv/bin/activate
+
+# Install pyserini and dependencies
+uv pip install pyserini
+uv pip install torch torchvision torchaudio  # PyTorch
+uv pip install faiss-cpu
+uv pip install transformers datasets tqdm numpy together wandb nltk evaluate rouge_score sacrebleu bert_score accelerate hf_transfer
+
+# Install JDK 21
+curl -LsSf https://astral.sh/uv/install.sh | sh
+sudo apt install ./jdk-21_linux-x64_bin.deb
+
+# Use it for this shell
+export JAVA_HOME="$("/usr/libexec/java_home" -v 21)"
+export PATH="$JAVA_HOME/bin:$PATH"
+# If you previously set these, keep them in sync:
+export DYLD_LIBRARY_PATH="$JAVA_HOME/lib/server:$JAVA_HOME/lib:$JAVA_HOME/lib/jli:${DYLD_LIBRARY_PATH}"
+
+java -version   # should show 21.x
+```
+
+

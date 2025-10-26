@@ -7,8 +7,10 @@ import json
 input_training_file = "./refusal_finetuning/malicious_pairs_parallel.json"
 prepared_training_file = "./refusal_finetuning/refusal_malicious_pairs_train.jsonl"
 
+MODEL = "Qwen/Qwen2.5-7B-Instruct"
+
 TOGETHER_API_KEY = _get_key()
-WANDB_AP_KEY = os.getenv("WANDB_API_KEY")
+WANDB_API_KEY = os.getenv("WANDB_API_KEY")
 
 def create_and_upload_training():
     with open(input_training_file, 'r') as f:
@@ -44,18 +46,51 @@ def create_and_upload_training():
     train_file_resp = client.files.upload(prepared_training_file, check=True)
     print(f"Train file response {train_file_resp.id}")
 
+    return train_file_resp.id
+
 def main():
     client = Together(api_key=TOGETHER_API_KEY)
 
-    train_file_id = 
+    # TODO Set the train_file_id
+    train_file_id = ""
 
     if not os.exists(prepared_training_file):
-        create_and_upload_training()
+        train_file_id = create_and_upload_training()
+
+    ft_resp = client.fine_tuning.create(
+        model = MODEL,
+        training_file = train_file_id,
+        # validation_file = train_file_id,
+        suffix = "test0_cs2881_refusal",
+        n_epochs = 5,
+        n_checkpoints = 2,
+        learning_rate = 0.001,
+        batch_size = 50,
+        lora=True,
+        wandb_api_key = WANDB_API_KEY
+    )
+
+    print(ft_resp.id)
 
     # ---
 
+    finetuned_model = ft_resp.output_name
+    print(f"Fine-tuned model output_name: {finetuned_model}")
 
+    user_prompt = "What's the capital of France?"
 
+    response = client.chat.completions.create(
+        model = finetuned_model,
+        messages = [
+            {
+                "role": "user",
+                "content": user_prompt,
+            }
+        ],
+        max_tokens=124,
+    )
+
+    print(response.choices[0].message.content)
 
 if __name__ == '__main__':
     main()
