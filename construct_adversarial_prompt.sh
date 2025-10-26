@@ -8,15 +8,9 @@
 #SBATCH --error=/n/tambe_lab_tier1/Lab/haichuan/rag-privacy/slurm_logs/%x_%j.err
 
 # 1. Activate environment
-set -euo pipefail
-
-# source ~/.bashrc
-# conda activate 
+source ~/.bashrc
 
 source .venv/bin/activate
-
-echo "Using Python: $(which python)"
-python -V
 
 # 2. Set HF cache path (optional but recommended)
 # export HF_DATASETS_CACHE="/n/tambe_lab_tier1/Lab/haichuan/hf_datasets_cache"

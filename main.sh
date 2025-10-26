@@ -7,18 +7,18 @@
 #SBATCH --output=/n/tambe_lab_tier1/Lab/haichuan/rag-privacy/slurm_logs/%x_%j.out
 #SBATCH --error=/n/tambe_lab_tier1/Lab/haichuan/rag-privacy/slurm_logs/%x_%j.err
 
-set -euo pipefail
+source ~/.bashrc
 
-# source ~/.bashrc
-# conda activate 
+# Set up logging
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOG_DIR="./logs"
+mkdir -p ${LOG_DIR}
+OUTPUT_LOG="${LOG_DIR}/output_${TIMESTAMP}.log"
+ERROR_LOG="${LOG_DIR}/error_${TIMESTAMP}.log"
 
-source .venv/bin/activate
-
-echo "Using Python: $(which python)"
-python -V
-
-# export LD_LIBRARY_PATH="/.../.../conda/envs/rag/lib"  # path to your env's lib; for JAVA and pyserini
-# export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:$LD_LIBRARY_PATH"
+# Redirect stdout and stderr to log files while also displaying on console
+exec > >(tee -a "${OUTPUT_LOG}")
+exec 2> >(tee -a "${ERROR_LOG}" >&2)
 
 API=together
 HF_MODEL=mistralai/Mistral-7B-Instruct-v0.3         # model id of huggingface
