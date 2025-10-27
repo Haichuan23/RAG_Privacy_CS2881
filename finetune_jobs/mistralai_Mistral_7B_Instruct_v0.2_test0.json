@@ -1,0 +1,22 @@
+{
+  "model_name": "mistralai/Mistral-7B-Instruct-v0.2",
+  "test_number": 0,
+  "training_file_id": "file-3414c985-3061-47c3-9962-e841c6be4f01",
+  "fine_tuned_model_name": "haichuanwang23_9741/Mistral-7B-Instruct-v0.2-test0_cs2881_refusal-a44c8245",
+  "job_id": "ft-7a1ceba5-bda3",
+  "created_at": "2025-10-27T16:09:42.388645",
+  "metadata": {
+    "suffix": "test0_cs2881_refusal",
+    "finetune_params": {
+      "n_epochs": 5,
+      "n_checkpoints": 2,
+      "learning_rate": 0.001,
+      "batch_size": 8,
+      "lora": true
+    },
+    "fine_tuned_model_name:": "haichuanwang23_9741/Mistral-7B-Instruct-v0.2-test0_cs2881_refusal-a44c8245"
+  },
+  "job_status": "completed",
+  "completion_time": "2025-10-27T16:46:18.287916",
+  "updated_at": "2025-10-27T16:46:18.290979"
+}

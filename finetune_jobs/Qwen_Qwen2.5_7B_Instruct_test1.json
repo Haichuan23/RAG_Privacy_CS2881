@@ -1,0 +1,19 @@
+{
+  "model_name": "Qwen/Qwen2.5-7B-Instruct",
+  "test_number": 1,
+  "training_file_id": "file-b956c154-247d-4955-acc3-bddd98944ad9",
+  "fine_tuned_model": "haichuanwang23_9741/Qwen2.5-7B-Instruct-test1_cs2881_refusal-d9fc26f5",
+  "job_id": "ft-4ed83767-d047",
+  "created_at": "2025-10-27T15:32:39.116595",
+  "metadata": {
+    "suffix": "test1_cs2881_refusal",
+    "finetune_params": {
+      "n_epochs": 5,
+      "n_checkpoints": 2,
+      "learning_rate": 0.001,
+      "batch_size": 8,
+      "lora": true
+    },
+    "fine_tuned_model": "haichuanwang23_9741/Qwen2.5-7B-Instruct-test1_cs2881_refusal-d9fc26f5"
+  }
+}

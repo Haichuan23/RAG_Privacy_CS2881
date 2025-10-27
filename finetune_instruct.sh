@@ -12,13 +12,15 @@ ERROR_LOG="${LOG_DIR}/error_${TIMESTAMP}.log"
 exec > >(tee -a "${OUTPUT_LOG}")
 exec 2> >(tee -a "${ERROR_LOG}" >&2)
 
-TOGETHER_BASE_MODEL="mistralai/Mistral-7B-Instruct-v0.3"
-TEST_NUMBER=1
+TOGETHER_BASE_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
+TEST_NUMBER=0
 FINETUNE_PROMPTS_INPUT_FILE="./refusal_finetuning/malicious_pairs_parallel.json"
-ACTION="start"
+ACTION="test"
+# MODEL_NAME="haichuanwang23_9741/Qwen2.5-7B-Instruct-test1_cs2881_refusal-d9fc26f5"
 
 # train_file = "file-2a977589-00d3-434a-8c29-b90e9f8bd9a1"
 # fine_tuned_name = "haichuanwang23_9741/Qwen2.5-7B-Instruct-test0_cs2881_refusal-6426d2a0"
+# fine_tuned_name = "haichuanwang23_9741/Qwen2.5-7B-Instruct-test1_cs2881_refusal-d9fc26f5"
 
 echo "=== Fine-tuning Refusal Script ==="
 echo "Model: ${TOGETHER_BASE_MODEL}"
@@ -69,11 +71,20 @@ case $ACTION in
         ;;
     "test")
         echo "====== TESTING FINE-TUNED MODEL ======"
-        python modules/finetune_refusal_instruct.py \
-            --test \
-            --model "${TOGETHER_BASE_MODEL}" \
-            --test-number ${TEST_NUMBER} \
-            --model-name "${MODEL_NAME}"
+        if [ -n "$MODEL_NAME" ]; then
+            echo "Using provided model name: ${MODEL_NAME}"
+            python modules/finetune_refusal_instruct.py \
+                --test \
+                --model "${TOGETHER_BASE_MODEL}" \
+                --test-number ${TEST_NUMBER} \
+                --model-name "${MODEL_NAME}"
+        else
+            echo "Retrieving model name from metadata..."
+            python modules/finetune_refusal_instruct.py \
+                --test \
+                --model "${TOGETHER_BASE_MODEL}" \
+                --test-number ${TEST_NUMBER}
+        fi
         ;;
     *)
         exit 1

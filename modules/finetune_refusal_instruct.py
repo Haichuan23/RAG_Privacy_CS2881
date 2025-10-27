@@ -77,6 +77,46 @@ def load_job_metadata(model_name, test_number):
         return json.load(f)
 
 
+def update_job_metadata(model_name, test_number, updates):
+    """Update existing job metadata with new information."""
+    try:
+        # Load existing metadata
+        metadata = load_job_metadata(model_name, test_number)
+        
+        # Update with new information
+        metadata.update(updates)
+        metadata["updated_at"] = datetime.now().isoformat()
+        
+        # Save back to file
+        metadata_file = get_job_metadata_file(model_name, test_number)
+        with open(metadata_file, 'w') as f:
+            json.dump(metadata, f, indent=2)
+        
+        print(f"Job metadata updated: {metadata_file}")
+        return metadata_file
+        
+    except FileNotFoundError:
+        print(f"Warning: No existing metadata file found for {model_name} test {test_number}")
+        return None
+
+
+def get_finetuned_model_name(model_name, test_number):
+    """Get the fine-tuned model name from metadata if available."""
+    try:
+        metadata = load_job_metadata(model_name, test_number)
+        
+        if "fine_tuned_model_name" in metadata:
+            return metadata["fine_tuned_model_name"]
+        else:
+            print(f"Fine-tuned model name not yet available in metadata.")
+            print(f"Run query command to update metadata if job is completed.")
+            return None
+            
+    except FileNotFoundError:
+        print(f"No metadata file found for {model_name} test {test_number}")
+        return None
+
+
 def create_and_upload_training_file(input_file, prepared_file):
     """Create and validate training file from malicious pairs JSON."""
     print(f"Creating training file from: {input_file}")
@@ -151,11 +191,16 @@ def start_finetune_job(model_name, training_file_id, test_number, suffix=None, *
         print(f"Fine-tuning job started successfully!")
         print(f"Job ID: {job_id}")
         
+        # Debug: Print all available attributes from the response
+        print(f"Response type: {type(ft_resp)}")
+        print(f"Response attributes: {[attr for attr in dir(ft_resp) if not attr.startswith('_')]}")
+        
         # Save job metadata
         metadata = {
             "suffix": suffix,
             "finetune_params": params
         }
+        
         save_job_metadata(model_name, test_number, training_file_id, job_id, metadata)
         
         return job_id
@@ -165,7 +210,7 @@ def start_finetune_job(model_name, training_file_id, test_number, suffix=None, *
         raise
 
 
-def query_job_status(job_id):
+def query_job_status(job_id, model_name=None, test_number=None):
     """Query the status of a fine-tuning job."""
     client = Together(api_key=TOGETHER_API_KEY)
     
@@ -182,11 +227,30 @@ def query_job_status(job_id):
         if hasattr(job_status, 'training_file') and job_status.training_file:
             print(f"Training file: {job_status.training_file}")
         
-        if hasattr(job_status, 'fine_tuned_model') and job_status.fine_tuned_model:
-            print(f"Fine-tuned model: {job_status.fine_tuned_model}")
-        
+        if hasattr(job_status, 'output_name') and job_status.output_name:
+            print(f"Fine-tuned model name: {job_status.output_name}")
+
+            # Save fine-tuned model name to metadata if job completed successfully
+            if (model_name and (test_number is not None)):
+                updates = {
+                    "fine_tuned_model_name": job_status.output_name,
+                    "job_status": job_status.status,
+                    "completion_time": datetime.now().isoformat()
+                }
+                update_job_metadata(model_name, test_number, updates)
+                print(f"✅ Fine-tuned model name saved to metadata: {job_status.output_name}")
+
         if hasattr(job_status, 'error') and job_status.error:
             print(f"Error: {job_status.error}")
+            
+            # Save error info to metadata if provided
+            if model_name and test_number:
+                updates = {
+                    "job_status": job_status.status,
+                    "error": job_status.error,
+                    "error_time": datetime.now().isoformat()
+                }
+                update_job_metadata(model_name, test_number, updates)
         
         return job_status
         
@@ -195,14 +259,14 @@ def query_job_status(job_id):
         raise
 
 
-def monitor_job(job_id, check_interval=60):
+def monitor_job(job_id, check_interval=60, model_name=None, test_number=None):
     """Monitor job status until completion."""
     print(f"Monitoring job {job_id} (checking every {check_interval} seconds)")
     print("Press Ctrl+C to stop monitoring")
     
     try:
         while True:
-            status = query_job_status(job_id)
+            status = query_job_status(job_id, model_name, test_number)
             
             if status.status in ['succeeded', 'failed', 'cancelled']:
                 print(f"Job completed with status: {status.status}")
@@ -254,6 +318,8 @@ def main():
                             help='Monitor job status until completion')
     action_group.add_argument('-t', '--test', action='store_true',
                             help='Test a fine-tuned model')
+    action_group.add_argument('-g', '--get-model-name', action='store_true',
+                            help='Get the fine-tuned model name from metadata')
     
     # Common arguments
     parser.add_argument('--model', required=True,
@@ -338,7 +404,7 @@ def main():
                     print("Use --job-id to specify the job ID.")
                     sys.exit(1)
             
-            query_job_status(job_id)
+            query_job_status(job_id, args.model, args.test_number)
             
         elif args.monitor:
             # Monitor job until completion
@@ -355,17 +421,41 @@ def main():
                     print("Use --job-id to specify the job ID.")
                     sys.exit(1)
             
-            monitor_job(job_id, args.check_interval)
+            monitor_job(job_id, args.check_interval, args.model, args.test_number)
             
         elif args.test:
             # Test fine-tuned model
             model_name = args.model_name
+            
             if not model_name:
-                print("Error: --model-name is required for testing.")
-                sys.exit(1)
+                # Try to get model name from metadata
+                print("No model name provided, retrieving from metadata...")
+                if not args.model or (args.test_number is None):
+                    print("Error: --model and --test-number are required when --model-name is not provided.")
+                    sys.exit(1)
+                
+                model_name = get_finetuned_model_name(args.model, args.test_number)
+                if not model_name:
+                    print("Error: Could not retrieve model name from metadata.")
+                    print("Please provide --model-name explicitly or ensure metadata contains the model name.")
+                    sys.exit(1)
+                
+                print(f"Using model from metadata: {model_name}")
+            else:
+                print(f"Using provided model name: {model_name}")
             
             prompt = args.prompt or "What's the capital of France?"
             test_model(model_name, prompt)
+            
+        elif args.get_model_name:
+            # Get fine-tuned model name from metadata
+            model_name = get_finetuned_model_name(args.model, args.test_number)
+            if model_name:
+                print(f"Fine-tuned model name: {model_name}")
+            else:
+                print("Fine-tuned model name not available.")
+                print("Try running query command if the job has completed.")
+                sys.exit(1)
             
     except Exception as e:
         print(f"Error: {e}")
