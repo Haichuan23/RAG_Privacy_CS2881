@@ -12,10 +12,11 @@ ERROR_LOG="${LOG_DIR}/error_${TIMESTAMP}.log"
 exec > >(tee -a "${OUTPUT_LOG}")
 exec 2> >(tee -a "${ERROR_LOG}" >&2)
 
-TOGETHER_BASE_MODEL="mistralai/Mistral-7B-Instruct-v0.2"
-TEST_NUMBER=0
+TOGETHER_BASE_MODEL="Qwen/Qwen2.5-7B-Instruct"
+TEST_NUMBER=1
 FINETUNE_PROMPTS_INPUT_FILE="./refusal_finetuning/malicious_pairs_parallel.json"
-ACTION="test"
+ACTION="download"
+OUTPUT_DIR="./downloaded_models"
 # MODEL_NAME="haichuanwang23_9741/Qwen2.5-7B-Instruct-test1_cs2881_refusal-d9fc26f5"
 
 # train_file = "file-2a977589-00d3-434a-8c29-b90e9f8bd9a1"
@@ -27,6 +28,7 @@ echo "Model: ${TOGETHER_BASE_MODEL}"
 echo "Test Number: ${TEST_NUMBER}"
 echo "Action: ${ACTION}"
 echo "Training File: ${FINETUNE_PROMPTS_INPUT_FILE}"
+echo "Output Directory: ${OUTPUT_DIR}"
 echo "Timestamp: ${TIMESTAMP}"
 echo "=================================="
 
@@ -86,7 +88,27 @@ case $ACTION in
                 --test-number ${TEST_NUMBER}
         fi
         ;;
+    "download")
+        echo "====== DOWNLOADING FINE-TUNED MODEL ======"
+        if [ -n "$JOB_ID" ]; then
+            python modules/finetune_refusal_instruct.py \
+                --download \
+                --model "${TOGETHER_BASE_MODEL}" \
+                --test-number ${TEST_NUMBER} \
+                --job-id "${JOB_ID}" \
+                --output-dir "${OUTPUT_DIR}"
+        else
+            echo "Retrieving job ID from metadata..."
+            python modules/finetune_refusal_instruct.py \
+                --download \
+                --model "${TOGETHER_BASE_MODEL}" \
+                --test-number ${TEST_NUMBER} \
+                --output-dir "${OUTPUT_DIR}"
+        fi
+        ;;
     *)
+        echo "Invalid action: ${ACTION}"
+        echo "Valid actions are: start, query, monitor, test, download"
         exit 1
         ;;
 esac

@@ -14,8 +14,8 @@ exec > >(tee -a "${OUTPUT_LOG}")
 exec 2> >(tee -a "${ERROR_LOG}" >&2)
 
 API=together
-HF_MODEL=Qwen/Qwen2.5-7B-Instruct         # model id of huggingface
-TOGETHER_MODEL=Qwen/Qwen2.5-7B-Instruct   # model id of togetherai
+HF_MODEL=mistralai/Mistral-7B-Instruct-v0.3         # model id of huggingface
+TOGETHER_MODEL=mistralai/Mistral-7B-Instruct-v0.3   # model id of togetherai
 IS_CHAT_MODEL=true
 IO_INPUT_PATH="anchor_prompts.json"   # path to your prompt file (JSON): a list of {"id": int, "prompt": str}
 DATASTORE_ROOT="./datastores"  # where you want to save your datastore

@@ -60,7 +60,21 @@ python main_local.py \
     --max_retrieval_seq_length 256 \
     --ric_stride 128 \
     --raw_data_dir raw_data \
-    --io_input_path eval_data/Wikipedia/io_input.json \
+    --io_input_path eval_data/Wikipedia/al-7b-instruct"
+   ```
+
+3. **Run the script**:
+   ```bash
+   ./main_local.sh
+   ```
+
+## Notes
+
+- The local model version automatically handles model loading and generation
+- No API keys or internet connection required after model download
+- Performance depends on your local hardware (GPU recommended)
+- Model loading time will be longer on first run
+io_input.json \
     --io_output_root eval_data/Wikipedia/io_output \
     --datastore_root datastores
 
@@ -152,17 +166,4 @@ The local model should be:
 2. **Update the script**:
    ```bash
    # Edit main_local.sh
-   LOCAL_MODEL_PATH="./local_models/mistral-7b-instruct"
-   ```
-
-3. **Run the script**:
-   ```bash
-   ./main_local.sh
-   ```
-
-## Notes
-
-- The local model version automatically handles model loading and generation
-- No API keys or internet connection required after model download
-- Performance depends on your local hardware (GPU recommended)
-- Model loading time will be longer on first run
+   LOCAL_MODEL_PATH="./local_models/mistr

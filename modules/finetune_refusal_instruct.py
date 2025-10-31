@@ -279,6 +279,54 @@ def monitor_job(job_id, check_interval=60, model_name=None, test_number=None):
         print("\nMonitoring stopped by user.")
 
 
+def download_model(job_id, model_name, test_number, output_dir="./downloaded_models"):
+    """Download a fine-tuned model."""
+    client = Together(api_key=TOGETHER_API_KEY)
+    
+    # Ensure output directory exists
+    Path(output_dir).mkdir(exist_ok=True)
+    
+    # Create a clean filename based on model name and test number
+    clean_model = model_name.replace("/", "_").replace("-", "_")
+    output_filename = f"{clean_model}_test{test_number}_model.tar.zst"
+    output_path = os.path.join(output_dir, output_filename)
+    
+    # Check if model already exists
+    if os.path.exists(output_path):
+        print("Model exists, I'm not downloading")
+        return output_path
+    
+    print(f"Downloading fine-tuned model...")
+    print(f"Job ID: {job_id}")
+    print(f"Output path: {output_path}")
+    
+    try:
+        client.fine_tuning.download(
+            id=job_id,
+            output=output_path,
+        )
+        
+        print(f"✅ Model downloaded successfully to: {output_path}")
+        
+        # Update metadata with download info
+        try:
+            updates = {
+                "downloaded_at": datetime.now().isoformat(),
+                "download_path": output_path,
+                "download_filename": output_filename
+            }
+            update_job_metadata(model_name, test_number, updates)
+            print(f"Download info saved to metadata")
+        except Exception as meta_error:
+            print(f"Warning: Could not update metadata: {meta_error}")
+        
+        return output_path
+        
+    except Exception as e:
+        print(f"Error downloading model: {e}")
+        raise
+
+
 def test_model(model_name, prompt="What's the capital of France?"):
     """Test a fine-tuned model with a sample prompt."""
     client = Together(api_key=TOGETHER_API_KEY)
@@ -318,6 +366,8 @@ def main():
                             help='Monitor job status until completion')
     action_group.add_argument('-t', '--test', action='store_true',
                             help='Test a fine-tuned model')
+    action_group.add_argument('-d', '--download', action='store_true',
+                            help='Download a fine-tuned model')
     action_group.add_argument('-g', '--get-model-name', action='store_true',
                             help='Get the fine-tuned model name from metadata')
     
@@ -352,6 +402,10 @@ def main():
                        help='Fine-tuned model name for testing')
     parser.add_argument('--prompt',
                        help='Test prompt (default: "What\'s the capital of France?")')
+    
+    # Arguments for downloading
+    parser.add_argument('--output-dir',
+                       help='Directory to save downloaded models (default: ./downloaded_models)')
     
     args = parser.parse_args()
     
@@ -446,6 +500,38 @@ def main():
             
             prompt = args.prompt or "What's the capital of France?"
             test_model(model_name, prompt)
+            
+        elif args.download:
+            # Download fine-tuned model
+            job_id = args.job_id
+            
+            if not job_id:
+                # Try to load from metadata file
+                try:
+                    metadata = load_job_metadata(args.model, args.test_number)
+                    job_id = metadata["job_id"]
+                    print(f"Using job ID from metadata: {job_id}")
+                except FileNotFoundError:
+                    print("Error: No job ID provided and no metadata file found.")
+                    print("Use --job-id to specify the job ID.")
+                    sys.exit(1)
+            
+            output_dir = args.output_dir or "./downloaded_models"
+            
+            # Check if job is completed first
+            print("Checking job status before download...")
+            status = query_job_status(job_id, args.model, args.test_number)
+            
+            if status.status != "succeeded":
+                print(f"Error: Job must be completed successfully before download.")
+                print(f"Current status: {status.status}")
+                if status.status == "failed":
+                    print("Job failed - cannot download model.")
+                elif status.status in ["running", "queued"]:
+                    print("Job is still running - please wait for completion.")
+                sys.exit(1)
+            
+            download_model(job_id, args.model, args.test_number, output_dir)
             
         elif args.get_model_name:
             # Get fine-tuned model name from metadata

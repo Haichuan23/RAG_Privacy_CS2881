@@ -7,7 +7,7 @@
 # 1. A local directory path: "/path/to/your/local/model"
 # 2. A HuggingFace model name: "mistralai/Mistral-7B-Instruct-v0.3"
 #    (will be automatically downloaded if not found locally)
-LOCAL_MODEL_PATH="Qwen/Qwen2.5-7B"  # Change this to your model
+LOCAL_MODEL_PATH="./downloaded_models/qwen2.5-7b-instruct-test1-refusal"  # Change this to your model
 
 # Set your data paths
 RAW_DATA_DIR="raw_data/private/wiki_newest"  # Directory containing your raw data files
@@ -20,7 +20,7 @@ DATASTORE_ROOT="datastores"  # Directory for storing datastores
 # IMPORTANT: Match the model type correctly!
 # - For base models (Qwen/Qwen2.5-7B): use IS_CHAT_MODEL=false
 # - For instruct models (Qwen/Qwen2.5-7B-Instruct): use IS_CHAT_MODEL=true
-IS_CHAT_MODEL=false  # Set to "true" for chat models, "false" for completion models
+IS_CHAT_MODEL=true  # Set to "true" for chat models, "false" for completion models
 
 python main_local.py  \
     --task io   \

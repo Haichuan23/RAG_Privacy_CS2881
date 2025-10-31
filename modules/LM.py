@@ -17,7 +17,7 @@ class LM(object):
         
         if my_args.api == 'hf':
             self.tokenizer = AutoTokenizer.from_pretrained(llm_args.hf_ckpt)
-            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').cuda().eval()
+            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').eval()
     
             self.model.resize_token_embeddings(len(self.tokenizer))
                 
@@ -66,9 +66,9 @@ class LM(object):
             # Apply chat template if this is a chat model
             if self.is_chat_model and hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
                 print("\n" + "="*80)
-                print("DEBUG: Applying chat template")
-                print(f"Original input length: {len(lm_input)} chars")
-                print(f"Original input (first 200 chars): {lm_input[:200]}...")
+                # print("DEBUG: Applying chat template")
+                # print(f"Original input length: {len(lm_input)} chars")
+                # print(f"Original input (first 200 chars): {lm_input[:200]}...")
 
                 # For RAG, the input might be: [retrieved_docs]\n\n[query]
                 # We want to present this naturally to the chat model
@@ -80,9 +80,9 @@ class LM(object):
                     add_generation_prompt=True
                 )
 
-                print(f"\nFormatted input length: {len(formatted_input)} chars")
-                print(f"Formatted input (first 500 chars):\n{formatted_input[:500]}...")
-                print(f"Formatted input (last 200 chars):\n...{formatted_input[-200:]}")
+                # print(f"\nFormatted input length: {len(formatted_input)} chars")
+                # print(f"Formatted input (first 500 chars):\n{formatted_input[:500]}...")
+                # print(f"Formatted input (last 200 chars):\n...{formatted_input[-200:]}")
 
                 inputs = self.tokenizer(formatted_input, return_tensors="pt")
             else:
