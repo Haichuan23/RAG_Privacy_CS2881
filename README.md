@@ -2,6 +2,8 @@
 
 Code repo for [Follow My Instruction and Spill the Beans: Scalable Data Extraction from Retrieval-Augmented Generation Systems](https://arxiv.org/abs/2402.17840) (ICLR 2025).
 
+See `LOCAL_MODEL_USAGE.md` for infomation about the fine-tuning extension.
+
 ## Installing `pyserini`
 You will need `pyserini` for RIC-LM.
 First make sure that you've installed `torch` and `python>=3.10`. To install `pyserini`, do the following in your virtual environment:
