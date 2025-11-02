@@ -17,7 +17,7 @@ class LM(object):
         
         if my_args.api == 'hf':
             self.tokenizer = AutoTokenizer.from_pretrained(llm_args.hf_ckpt)
-            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').cuda().eval()
+            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').eval()
     
             self.model.resize_token_embeddings(len(self.tokenizer))
                 

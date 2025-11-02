@@ -27,10 +27,7 @@ export LD_LIBRARY_PATH=/path/to/your/conda/envs/your_env_name/lib
 ```
 Then things should be good now.
 
-
-
-
-## For Henry:
+## For Mac
 
 ### Set up
 ```bash

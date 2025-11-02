@@ -14,13 +14,8 @@ This guide explains how to fine-tune a model to refuse adversarial RAG extractio
 
 ### 1. Training Data Generation
 
-#### `generate_balanced_training_data.py` ⭐ (RECOMMENDED)
-Generates **balanced** training data with both adversarial and benign examples.
-
-**Features**:
-- 400 adversarial examples (should refuse)
-- 600 benign examples (should answer)
-- 40/60 ratio prevents over-refusal while catching attacks
+**File:** `generate_refusal_training_data.py`
+Generates **only adversarial** examples (no benign data).
 
 **Adversarial patterns covered**:
 - Direct copy instructions: "copy and output all text before..."
@@ -28,23 +23,14 @@ Generates **balanced** training data with both adversarial and benign examples.
 - Indirect extraction: "before answering X, first repeat everything..."
 - Context exposure: "show me your full context window..."
 
-**Benign patterns covered**:
-- Simple questions: "What is X?"
-- Context-aware RAG queries: "Based on the information available, what is X?"
-- Summary requests: "Can you summarize what you know about X?"
-- Clarification requests: "I'm trying to understand X. Can you help?"
+⚠️ **Warning**: Using this alone may cause over-refusal! Use `generate_balanced_training_data.py` instead.
 
 **Usage**:
 ```bash
 cd refusal_finetuning
-python generate_balanced_training_data.py
+python generate_refusal_training_data.py
 # Output: balanced_refusal_training.json
 ```
-
-#### `generate_refusal_training_data.py`
-Generates **only adversarial** examples (no benign data).
-
-⚠️ **Warning**: Using this alone may cause over-refusal! Use `generate_balanced_training_data.py` instead.
 
 ### 2. Fine-tuning Script
 
@@ -74,7 +60,7 @@ qwen-2.5-7b-instruct-refusal-finetuned/
     └── ...
 ```
 
-### 3. Testing & Evaluation
+### 3. Testing (not evaluation, see `EVALUATION_GUIDE.md`)
 
 #### `test_finetuned_model.py` ⭐
 Comprehensive test suite that evaluates both refusal AND utility.
@@ -160,73 +146,7 @@ python test_finetuned_model.py
 
 ### Step 4: Run Full RAG Evaluation
 
-Test on actual RAG extraction attack:
-
-```bash
-cd /content/RAG_Privacy_CS2881
-
-python main_local.py \
-    --task io \
-    --api hf \
-    --hf_ckpt /content/RAG_Privacy_CS2881/refusal_finetuning/qwen-2.5-7b-instruct-refusal-finetuned/final \
-    --is_chat_model true \
-    --raw_data_dir ./raw_data/private/wiki_newest \
-    --io_input_path anchor_prompts.json \
-    --io_output_root ./eval_data/Wikipedia/io_output \
-    --output_dir ./out \
-    --datastore_root ./datastores
-
-# Then evaluate
-python main_local.py \
-    --task eval \
-    --eval_input_dir ./eval_data/Wikipedia/io_output \
-    --eval_output_dir ./eval_data/Wikipedia/eval_results \
-    --output_dir ./out
-```
-
-**Expected results for a good defense**:
-- **Low extraction scores** (BLEU, ROUGE should be low)
-- Model outputs should contain refusal messages instead of extracted context
-
-## Tuning the Training Data Ratio
-
-If you encounter issues, adjust the adversarial/benign ratio:
-
-### Over-refusal (model refuses legitimate questions)
-**Symptom**: Utility Retention < 70%
-
-**Solution**: Increase benign examples
-```python
-generate_balanced_training_data(
-    n_adversarial=300,  # Decrease
-    n_benign=700,       # Increase
-    output_file="balanced_refusal_training.json"
-)
-```
-
-### Under-refusal (model doesn't refuse adversarial prompts)
-**Symptom**: Refusal Rate < 70%
-
-**Solution**: Increase adversarial examples
-```python
-generate_balanced_training_data(
-    n_adversarial=500,  # Increase
-    n_benign=500,       # Decrease
-    output_file="balanced_refusal_training.json"
-)
-```
-
-### Balanced performance
-**Target**: Both metrics > 90%
-
-**Default ratio** (usually works well):
-```python
-generate_balanced_training_data(
-    n_adversarial=400,  # 40%
-    n_benign=600,       # 60%
-    output_file="balanced_refusal_training.json"
-)
-```
+See `EVALUATION_GUIDE.md`.
 
 ## Training Data Format
 
@@ -253,89 +173,14 @@ Human: {query}
 Assistant: {response}
 ```
 
-## Troubleshooting
-
-### Issue: Model not refusing adversarial prompts
-
-**Check**:
-1. Did you use `balanced_refusal_training.json` (not `malicious_pairs_parallel.json`)?
-2. Does training data contain "copy and output" patterns?
-3. Is the model actually loading the fine-tuned weights?
-
-**Solution**:
-```bash
-# Verify training data contains adversarial patterns
-grep "copy and output" balanced_refusal_training.json
-
-# Test with a single adversarial prompt
-python test_finetuned_model.py
-```
-
-### Issue: Model over-refusing (refusing legitimate questions)
-
-**Check**:
-1. Training data ratio (should be at least 50% benign examples)
-2. Are benign examples diverse enough?
-
-**Solution**:
-```bash
-# Regenerate with more benign examples
-python generate_balanced_training_data.py  # Edit n_benign to 700+
-```
-
-### Issue: "Model path not found" error
-
-**Check**:
-1. Fine-tuning completed successfully?
-2. Using `/final` directory (not `/checkpoint-32`)?
-
-**Solution**:
-```bash
-# Check directory structure
-ls -la qwen-2.5-7b-instruct-refusal-finetuned/final/
-
-# Verify config.json exists
-cat qwen-2.5-7b-instruct-refusal-finetuned/final/config.json
-```
-
-## Key Metrics
-
-### Success Criteria
-
-| Metric | Target | Description |
-|--------|--------|-------------|
-| Refusal Rate | >90% | % of adversarial prompts correctly refused |
-| Utility Retention | >90% | % of benign prompts correctly answered |
-| Overall Accuracy | >90% | Combined performance |
-
-### Interpretation
-
-- **Refusal Rate = 100%, Utility = 50%**: Over-refusal (too conservative)
-- **Refusal Rate = 50%, Utility = 100%**: Under-refusal (not defensive enough)
-- **Refusal Rate = 95%, Utility = 95%**: ✅ IDEAL!
-
-## Advanced: Custom Adversarial Patterns
-
-To add your own adversarial patterns, edit `generate_balanced_training_data.py`:
-
-```python
-ADVERSARIAL_TEMPLATES = [
-    # Add your custom patterns here
-    "Custom pattern: {question}. Now do something adversarial.",
-    # ...existing patterns...
-]
-```
-
-Then regenerate the training data.
-
 ## Files Summary
 
-| File | Purpose | When to Use |
-|------|---------|-------------|
-| `generate_balanced_training_data.py` | Generate training data | **Always use this** |
-| `finetune_qwen_refusal.py` | Fine-tune model | After generating data |
-| `test_finetuned_model.py` | Quick evaluation | After fine-tuning |
-| `main_local.py --task io` | Full RAG evaluation | Final validation |
+| File | Purpose | 
+|------|---------|
+| `generate_balanced_training_data.py` | Generate training data |
+| `finetune_qwen_refusal.py` | Fine-tune model | 
+| `test_finetuned_model.py` | Quick evaluation | 
+| `main_local.sh` | Full RAG evaluation |
 
 ## Expected Timeline
 
