@@ -1,12 +1,16 @@
 import os
 import json
 import nltk
+
 from evaluate import load
 import numpy as np
 import scipy
 from typing import Dict, List, Union
 from collections import defaultdict, Counter
 import statistics
+
+nltk.download("punkt")
+nltk.download("punkt_tab")
 rouge = load("rouge")
 sacrebleu = load("sacrebleu")
 bertscore = load("bertscore")
@@ -38,12 +42,11 @@ class Evaluator:
             n = len(L)
             assert n > 0
             if n < 2:
-                return 0.0                           # no NaNs for singletons
+                return 0.0  # no NaNs for singletons
             val = scipy.stats.sem(np.asarray(L, dtype=float), ddof=1)
             if isinstance(val, np.ndarray):
                 val = val.mean()
             return float(val) if np.isfinite(val) else 0.0
-
 
         # def mean(L: Union[List[int], List[float]]) -> float:
         #     assert len(L) > 0
@@ -92,8 +95,8 @@ class Evaluator:
             TP = len(true_words_set & pred_words_set)
             # FP = len(true_words_set) - len(true_words_set & pred_words_set)
             # FN = len(pred_words_set) - len(true_words_set & pred_words_set)
-            FP = len(pred_words_set - true_words_set)   # predicted but not true
-            FN = len(true_words_set - pred_words_set)   # true but not predicted
+            FP = len(pred_words_set - true_words_set)  # predicted but not true
+            FN = len(true_words_set - pred_words_set)  # true but not predicted
 
             precision = (TP) / (TP + FP + 1e-20)
             recall = (TP) / (TP + FN + 1e-20)
@@ -137,8 +140,10 @@ class Evaluator:
         # )
 
         bleu_results = np.asarray(
-            [self.metric_bleu.compute(predictions=[p], references=[r])["score"]
-            for p, r in zip(self.predictions_str, self.references_str)],
+            [
+                self.metric_bleu.compute(predictions=[p], references=[r])["score"]
+                for p, r in zip(self.predictions_str, self.references_str)
+            ],
             dtype=float,
         )
 
@@ -148,7 +153,7 @@ class Evaluator:
         rouge_results = self.metric_rouge.compute(
             predictions=self.predictions_str,
             references=self.references_str,
-            use_aggregator=False
+            use_aggregator=False,
         )
         rougeL = _to_float_list(rouge_results["rougeL"])
 
@@ -162,13 +167,15 @@ class Evaluator:
         bert_f1 = _to_float_list(bertscore_results["f1"])
 
         # exact_matches = np.array(self.predictions_str) == np.array(self.references_str)
-        exact_matches = (np.array(self.predictions_str) == np.array(self.references_str)).astype(float)
+        exact_matches = (
+            np.array(self.predictions_str) == np.array(self.references_str)
+        ).astype(float)
 
         # gen_metrics = {
         #     "bleu_score": mean(bleu_results),
         #     "bleu_score_sem": sem(bleu_results),
-        #     "rougeL_score": mean(rouge_results["rougeL"]),  
-        #     "rougeL_score_sem": sem(rouge_results["rougeL"]),  
+        #     "rougeL_score": mean(rouge_results["rougeL"]),
+        #     "rougeL_score_sem": sem(rouge_results["rougeL"]),
         #     "bert_score": mean(bertscore_results["f1"]),
         #     "bert_score_sem": sem(bertscore_results["f1"]),
         #     "exact_match": mean(exact_matches),

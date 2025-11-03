@@ -17,7 +17,7 @@ class LM(object):
         
         if my_args.api == 'hf':
             self.tokenizer = AutoTokenizer.from_pretrained(llm_args.hf_ckpt)
-            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').cuda().eval()
+            self.model = AutoModelForCausalLM.from_pretrained(llm_args.hf_ckpt, device_map='auto').eval()
     
             self.model.resize_token_embeddings(len(self.tokenizer))
                 
@@ -35,7 +35,7 @@ class LM(object):
             self.loss_fn = CrossEntropyLoss(reduction="none")
         elif my_args.api == 'together':
             assert llm_args.together_ckpt is not None
-            support = ['llama', 'falcon', 'alpaca', 'vicuna', 'mistral', 'mixtral', 'solar', 'yi', 'platypus', 'capybara', 'wizardlm', 'qwen']
+            support = ['llama', 'falcon', 'alpaca', 'vicuna', 'mistral', 'mixtral', 'solar', 'yi', 'platypus', 'capybara', 'wizardlm', 'qwen', 'marin']
             assert any((s in llm_args.hf_ckpt.lower() and s in llm_args.together_ckpt.lower()) for s in support)
             
             self.tokenizer = AutoTokenizer.from_pretrained(llm_args.hf_ckpt)
@@ -57,25 +57,45 @@ class LM(object):
         
     def generate(self, lm_input: str, compute_generation_scores=False, compute_input_loss=False):
         """input a string, output a string"""
-        
+
         output_dict = dict()
-        
+
         if self.api == 'hf':
             assert torch.cuda.is_available(), "CUDA is not available???"
-            inputs = self.tokenizer(lm_input, return_tensors="pt")
+
+            # Apply chat template if this is a chat model
+            if self.is_chat_model and hasattr(self.tokenizer, 'chat_template') and self.tokenizer.chat_template:
+                # For RAG, the input might be: [retrieved_docs]\n\n[query]
+                # We want to present this naturally to the chat model
+                # Option: Just put everything in user message (simple approach for now)
+                messages = [{"role": "user", "content": lm_input}]
+                formatted_input = self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                inputs = self.tokenizer(formatted_input, return_tensors="pt")
+            else:
+                inputs = self.tokenizer(lm_input, return_tensors="pt")
+
             input_ids = inputs["input_ids"].cuda()  #! [1, *]
+            attention_mask = inputs.get("attention_mask")
+            if attention_mask is not None:
+                attention_mask = attention_mask.cuda()
+
             assert input_ids.ndim == 2 and input_ids.shape[0] == 1
-            
+
             with torch.no_grad():
                 generation_output = self.model.generate(
                     input_ids=input_ids,
+                    attention_mask=attention_mask,
                     generation_config=self.generation_config,
                     return_dict_in_generate=True,
                     output_scores=True,
                 )
                 output_ids = generation_output.sequences[0]
                 generated_tokens = output_ids[input_ids.shape[1]:]  #! truncate, only output the LLM response
-                
+
                 if compute_generation_scores:
                     # compute transition scores: https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationMixin.compute_transition_scores 
                     # discussion: https://discuss.huggingface.co/t/announcement-generation-get-probabilities-for-generated-output/30075 
@@ -104,7 +124,7 @@ class LM(object):
                     output_dict["token_ppl_list"] = torch.exp(token_losses).tolist()
                     output_dict["total_input_ppl"] = math.exp(output_dict["total_input_loss"])
             
-            lm_output = self.tokenizer.decode(generated_tokens)
+            lm_output = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
             output_dict["lm_output"] = lm_output
         elif self.api == 'together':
             if self.is_chat_model:
