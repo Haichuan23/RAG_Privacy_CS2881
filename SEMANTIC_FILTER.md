@@ -19,7 +19,7 @@ IO_INPUT_PATH="anchor_prompts_benign.json"
 DATASTORE_ROOT="./benign"
 ```
 
-Also, change the evaluation mode of the semantic main file correctly:
+Also, change the evaluation mode of the semantic_guard_main.py file correctly:
 ```bash
 --evaluation_mode benign
 ```
