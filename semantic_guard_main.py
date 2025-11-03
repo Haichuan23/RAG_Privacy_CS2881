@@ -1,4 +1,4 @@
-from utils.argparser import get_args
+from utils.argparser_semantic import get_args
 from utils.helpers import fix_seeds, read_json
 from modules.LM import LM   
 from modules.RALM import RICLM
