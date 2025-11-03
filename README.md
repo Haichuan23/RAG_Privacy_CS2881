@@ -5,6 +5,7 @@
 Code repo for [Follow My Instruction and Spill the Beans: Scalable Data Extraction from Retrieval-Augmented Generation Systems](https://arxiv.org/abs/2402.17840) (ICLR 2025).
 
 See `LOCAL_MODEL_USAGE.md` for infomation about the fine-tuning extension.
+
 See `SEMANTIC_FILTER.md` for infomation about the semantic filtering extension.
 
 ## Installing `pyserini`
